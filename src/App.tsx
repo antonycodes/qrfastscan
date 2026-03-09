@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import jsQR from 'jsqr';
-import { History, X, Copy, RefreshCw, Trash2, Camera } from 'lucide-react';
+import { History, X, Copy, RefreshCw, Trash2, Camera, Download, ExternalLink } from 'lucide-react';
 
 interface ScanHistoryItem {
   data: string;
@@ -175,6 +175,40 @@ export default function App() {
     }
   };
 
+  const exportToCSV = () => {
+    if (scanHistory.length === 0) {
+      alert('Không có dữ liệu để xuất!');
+      return;
+    }
+    
+    const headers = ['Thời gian', 'Nội dung'];
+    const rows = scanHistory.map(item => [
+      item.time,
+      `"${item.data.replace(/"/g, '""')}"`
+    ]);
+    
+    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `qr_history_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const isValidUrl = (text: string) => {
+    try {
+      new URL(text);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
   return (
     <div className="bg-slate-50 min-h-screen font-sans text-slate-900">
       <div className="max-w-md mx-auto p-4 space-y-6">
@@ -213,17 +247,24 @@ export default function App() {
         </div>
 
         {/* Controls */}
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button 
             onClick={toggleCamera}
-            className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 py-3 rounded-xl font-medium shadow-sm active:bg-slate-100 transition hover:bg-slate-50"
+            className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 py-3 rounded-xl font-medium shadow-sm active:bg-slate-100 transition hover:bg-slate-50 text-sm"
           >
             <RefreshCw className="w-4 h-4" />
             Đổi Camera
           </button>
           <button 
+            onClick={exportToCSV}
+            className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 py-3 rounded-xl text-green-600 font-medium shadow-sm active:bg-green-50 transition hover:bg-green-50 text-sm"
+          >
+            <Download className="w-4 h-4" />
+            Xuất CSV
+          </button>
+          <button 
             onClick={clearHistory}
-            className="px-5 flex items-center justify-center gap-2 bg-white border border-slate-200 py-3 rounded-xl text-red-500 font-medium shadow-sm active:bg-red-50 transition hover:bg-red-50"
+            className="px-4 flex items-center justify-center gap-2 bg-white border border-slate-200 py-3 rounded-xl text-red-500 font-medium shadow-sm active:bg-red-50 transition hover:bg-red-50 text-sm"
           >
             <Trash2 className="w-4 h-4" />
             Xóa
@@ -274,6 +315,16 @@ export default function App() {
               <div className="bg-slate-50 p-4 rounded-xl mb-6 break-words border border-slate-200 max-h-48 overflow-y-auto">
                 <p className="text-slate-700 font-mono text-sm leading-relaxed">{resultText}</p>
               </div>
+
+              {isValidUrl(resultText) && (
+                <button 
+                  onClick={() => window.open(resultText, '_blank')}
+                  className="w-full mb-3 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 font-semibold py-3 rounded-xl hover:bg-blue-100 transition active:scale-[0.98]"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  Truy cập liên kết
+                </button>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <button 
