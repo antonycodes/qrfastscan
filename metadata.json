@@ -1,0 +1,5 @@
+{
+  "name": "QR Fast Scanner",
+  "description": "Quét liên tục - Dò kết quả nhanh",
+  "requestFramePermissions": ["camera"]
+}
