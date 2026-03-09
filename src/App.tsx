@@ -36,7 +36,13 @@ export default function App() {
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode }
+        video: { 
+          facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          // @ts-ignore - focusMode is not in the standard TS definitions yet
+          advanced: [{ focusMode: "continuous" }]
+        }
       });
       
       if (videoRef.current) {
@@ -69,15 +75,21 @@ export default function App() {
     const canvas = canvasRef.current;
 
     if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA && isScanning) {
-      canvas.height = video.videoHeight;
-      canvas.width = video.videoWidth;
+      // Optimize: Scale down the image for much faster processing
+      const MAX_WIDTH = 400;
+      const scale = Math.min(MAX_WIDTH / video.videoWidth, 1);
+      const width = Math.floor(video.videoWidth * scale);
+      const height = Math.floor(video.videoHeight * scale);
+
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       
       if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, width, height);
+        const imageData = ctx.getImageData(0, 0, width, height);
         const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: "dontInvert",
+          inversionAttempts: "attemptBoth",
         });
 
         if (code) {
